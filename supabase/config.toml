@@ -1,0 +1,4 @@
+project_id = "phzmbbnqtaszdltxohpt"
+
+[functions.smooth-endpoint]
+verify_jwt = false
