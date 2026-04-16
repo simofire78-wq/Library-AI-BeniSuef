@@ -23,11 +23,10 @@ const SECONDARY_NAV = [
 export function TopNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [secondaryOpen, setSecondaryOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false); // حالة الثيم اليدوية
+  const [isDark, setIsDark] = useState(false); 
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
 
-  // كود تحويل الثيم اليدوي
   const toggleTheme = () => {
     const newTheme = !isDark;
     setIsDark(newTheme);
@@ -105,7 +104,6 @@ export function TopNavbar() {
             )}
           </div>
 
-          {/* الجزء الجديد: زرار المظهر + تسجيل الدخول */}
           <div className="flex items-center gap-2 mr-4 border-r border-primary-foreground/20 pr-4">
             <Button
               variant="ghost"
@@ -144,20 +142,47 @@ export function TopNavbar() {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-primary border-t border-primary-foreground/20 px-4 pb-4 shadow-xl">
+        <div className="md:hidden bg-primary border-t border-primary-foreground/20 px-4 pb-6 shadow-xl animate-in slide-in-from-top duration-300">
           <ul className="flex flex-col gap-2 pt-4">
             {[...PRIMARY_NAV, ...SECONDARY_NAV].map((item) => (
               <li key={item.url}>
-                <NavLink to={item.url} className="flex items-center gap-3 p-3 rounded-lg text-primary-foreground/90 hover:bg-primary-foreground/10 transition-colors">
+                <NavLink 
+                  to={item.url} 
+                  className="flex items-center gap-3 p-3 rounded-xl text-primary-foreground/90 hover:bg-primary-foreground/10 transition-colors"
+                  onClick={() => setMobileOpen(false)}
+                >
                   <item.icon className="h-5 w-5" />
                   <span className="text-sm font-semibold">{item.title}</span>
                 </NavLink>
               </li>
             ))}
-            <li className="pt-2 border-t border-primary-foreground/10">
-               <Button onClick={toggleTheme} variant="ghost" className="w-full justify-start text-primary-foreground gap-3 p-3">
-                  {isDark ? <><Sun className="h-5 w-5" /> وضع النهار</> : <><Moon className="h-5 w-5" /> وضع الليل</>}
+
+            <li className="pt-2 mt-2 border-t border-primary-foreground/20 space-y-2">
+               <Button onClick={toggleTheme} variant="ghost" className="w-full justify-start text-primary-foreground gap-3 p-3 hover:bg-primary-foreground/10 rounded-xl">
+                  {isDark ? <><Sun className="h-5 w-5 text-yellow-300" /> الوضع النهاري</> : <><Moon className="h-5 w-5" /> الوضع الليلي</>}
                </Button>
+
+                {!authLoading && (
+                  user ? (
+                    <Link 
+                      to="/profile" 
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-white/10 text-white border border-white/10"
+                    >
+                      <User className="h-5 w-5" />
+                      <span className="text-sm font-bold">حسابي</span>
+                    </Link>
+                  ) : (
+                    <Link 
+                      to="/auth" 
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-white text-primary hover:bg-white/90 transition-all shadow-lg"
+                    >
+                      <LogIn className="h-5 w-5" />
+                      <span className="text-sm font-bold">تسجيل الدخول</span>
+                    </Link>
+                  )
+                )}
             </li>
           </ul>
         </div>
