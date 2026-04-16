@@ -4,6 +4,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { TopNavbar } from '@/components/TopNavbar';
+import { Footer } from '@/components/Footer'; // 1. استيراد الفوتر هنا
 import Index from './pages/Index';
 import Search from './pages/Search';
 import Dashboard from './pages/Dashboard';
@@ -31,7 +32,7 @@ const App = () => (
       <BrowserRouter>
         <div className="min-h-screen flex flex-col w-full bg-background" dir="rtl">
           <TopNavbar />
-          <main className="flex-1">
+          <main className="flex-1"> {/* flex-1 تضمن دفع الفوتر للأسفل */}
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/search" element={<Search />} />
@@ -51,6 +52,8 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
+          
+          <Footer /> {/* 2  */}
         </div>
       </BrowserRouter>
     </TooltipProvider>

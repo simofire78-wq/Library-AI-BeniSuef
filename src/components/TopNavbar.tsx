@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Home, Search, BarChart3, MessageSquare, Menu, X, Info, GraduationCap, Newspaper, Phone, ChevronDown, LogIn, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Home, Search, BarChart3, MessageSquare, Menu, X, Info, GraduationCap, Newspaper, Phone, ChevronDown, LogIn, User, Sun, Moon } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation, Link } from 'react-router-dom';
 import departmentLogo from '@/assets/department-logo.jpg';
@@ -23,25 +23,34 @@ const SECONDARY_NAV = [
 export function TopNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [secondaryOpen, setSecondaryOpen] = useState(false);
+  const [isDark, setIsDark] = useState(false); // حالة الثيم اليدوية
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
+
+  // كود تحويل الثيم اليدوي
+  const toggleTheme = () => {
+    const newTheme = !isDark;
+    setIsDark(newTheme);
+    if (newTheme) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   const isSecondaryActive = SECONDARY_NAV.some((item) =>
     item.url === '/' ? location.pathname === '/' : location.pathname.startsWith(item.url)
   );
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-primary shadow-md" dir="rtl">
-      {/* Top bar: university branding */}
+    <header className="sticky top-0 z-50 w-full bg-primary shadow-md transition-colors duration-300" dir="rtl">
       <div className="border-b border-primary-foreground/20 py-1 px-4 text-center bg-primary/90">
         <p className="text-xs text-primary-foreground/80 font-medium">
           جامعة بني سويف — كلية الآداب — قسم علوم المعلومات
         </p>
       </div>
 
-      {/* Main navbar */}
       <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 py-2">
-        {/* Logo + Title */}
         <div className="flex items-center gap-3 shrink-0">
           <img
             src={departmentLogo}
@@ -54,13 +63,11 @@ export function TopNavbar() {
           </div>
         </div>
 
-        {/* Desktop nav links */}
         <div className="hidden md:flex items-center gap-1">
           {PRIMARY_NAV.map((item) => (
             <NavLink
               key={item.url}
               to={item.url}
-              end={item.url === '/'}
               className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground transition-colors"
               activeClassName="bg-primary-foreground/20 text-primary-foreground font-bold"
             >
@@ -69,14 +76,11 @@ export function TopNavbar() {
             </NavLink>
           ))}
 
-          {/* Dropdown for secondary pages */}
           <div className="relative">
             <button
               onClick={() => setSecondaryOpen((v) => !v)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isSecondaryActive
-                  ? 'bg-primary-foreground/20 text-primary-foreground font-bold'
-                  : 'text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground'
+                isSecondaryActive ? 'bg-primary-foreground/20 text-primary-foreground font-bold' : 'text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground'
               }`}
             >
               <span>القسم</span>
@@ -101,70 +105,59 @@ export function TopNavbar() {
             )}
           </div>
 
-          {/* Auth button */}
-          {!authLoading && (
-            <div className="hidden md:flex">
-              {user ? (
-                <Link
-                  to="/profile"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground transition-colors"
-                >
+          {/* الجزء الجديد: زرار المظهر + تسجيل الدخول */}
+          <div className="flex items-center gap-2 mr-4 border-r border-primary-foreground/20 pr-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="text-primary-foreground hover:bg-primary-foreground/10 rounded-full"
+            >
+              {isDark ? <Sun className="h-4 w-4 text-yellow-300" /> : <Moon className="h-4 w-4" />}
+            </Button>
+
+            {!authLoading && (
+              user ? (
+                <Link to="/profile" className="flex items-center gap-1.5 px-3 py-2 text-primary-foreground/80 hover:text-primary-foreground text-sm font-medium">
                   <User className="h-4 w-4" />
                   <span>حسابي</span>
                 </Link>
               ) : (
-                <Link
-                  to="/auth"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 transition-colors"
-                >
+                <Link to="/auth" className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 text-sm font-bold transition-all border border-white/20">
                   <LogIn className="h-4 w-4" />
                   <span>تسجيل الدخول</span>
                 </Link>
-              )}
-            </div>
-          )}
+              )
+            )}
+          </div>
         </div>
 
-        {/* Mobile menu toggle */}
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden text-primary-foreground hover:bg-primary-foreground/10"
+          className="md:hidden text-primary-foreground"
           onClick={() => setMobileOpen((v) => !v)}
-          aria-label="فتح القائمة"
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
       </nav>
 
-      {/* Mobile dropdown menu */}
+      {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-primary border-t border-primary-foreground/20 px-4 pb-3">
-          <ul className="flex flex-col gap-1 pt-2">
+        <div className="md:hidden bg-primary border-t border-primary-foreground/20 px-4 pb-4 shadow-xl">
+          <ul className="flex flex-col gap-2 pt-4">
             {[...PRIMARY_NAV, ...SECONDARY_NAV].map((item) => (
               <li key={item.url}>
-                <NavLink
-                  to={item.url}
-                  end={item.url === '/'}
-                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground transition-colors w-full"
-                  activeClassName="bg-primary-foreground/20 text-primary-foreground font-bold"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  <span>{item.title}</span>
+                <NavLink to={item.url} className="flex items-center gap-3 p-3 rounded-lg text-primary-foreground/90 hover:bg-primary-foreground/10 transition-colors">
+                  <item.icon className="h-5 w-5" />
+                  <span className="text-sm font-semibold">{item.title}</span>
                 </NavLink>
               </li>
             ))}
-            {/* Auth link in mobile */}
-            <li>
-              <Link
-                to={user ? '/profile' : '/auth'}
-                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground transition-colors w-full"
-                onClick={() => setMobileOpen(false)}
-              >
-                {user ? <User className="h-4 w-4 shrink-0" /> : <LogIn className="h-4 w-4 shrink-0" />}
-                <span>{user ? 'حسابي' : 'تسجيل الدخول'}</span>
-              </Link>
+            <li className="pt-2 border-t border-primary-foreground/10">
+               <Button onClick={toggleTheme} variant="ghost" className="w-full justify-start text-primary-foreground gap-3 p-3">
+                  {isDark ? <><Sun className="h-5 w-5" /> وضع النهار</> : <><Moon className="h-5 w-5" /> وضع الليل</>}
+               </Button>
             </li>
           </ul>
         </div>

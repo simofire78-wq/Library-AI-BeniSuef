@@ -72,7 +72,7 @@ export default function Chatbot() {
         <div className="flex items-center gap-3">
           <Bot className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="font-bold text-sm">مساعد مكتبة IQ</h1>
+            <h1 className="font-bold text-sm">مساعد مكتبة القسم</h1>
             <p className="text-xs text-muted-foreground">متصل بالكتالوج الرقمي للقسم</p>
           </div>
         </div>

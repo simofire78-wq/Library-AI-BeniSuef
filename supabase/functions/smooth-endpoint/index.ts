@@ -3,8 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
@@ -12,54 +11,50 @@ serve(async (req) => {
 
   try {
     const { messages } = await req.json();
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
     
-    // سحب مفتاح جيمناي من الـ Secrets
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("Gemini API Key is missing");
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // جلب الكتب ومعاها الـ ID عشان نربطها بالإحصائيات
+    const { data: allBooks } = await supabase.from("books").select("id, title, author, category");
+    const { data: stats } = await supabase.rpc('get_book_activity_stats');
 
-    // جلب البيانات والإحصائيات
-    const { data: statsData } = await supabase.rpc('get_book_activity_stats');
-    const { data: booksMetadata } = await supabase.from("books").select("id, title, author, category, year");
-
-    const booksContext = booksMetadata?.map((book: any) => {
-      const stats = statsData?.find((s: any) => s.book_id === book.id);
-      return `[${book.title} | ${book.category} | تحميلات: ${stats?.downloads || 0} | تقييم: ${stats?.rating || 0}]`;
+    // دمج البيانات في نص واحد يفهمه الذكاء الاصطناعي
+    const libraryContext = allBooks?.map(b => {
+      const s = stats?.find((item: any) => item.book_id === b.id);
+      return `- ${b.title} | مؤلفه: ${b.author} | قسم: ${b.category} | تحميلاته: ${s?.downloads || 0} | تقييمه: ${s?.average_rating || 0}`;
     }).join("\n");
 
-    const systemPrompt = `أنت "مساعد مكتبة IQ الذكي" لجامعة بني سويف. استخدم البيانات التالية للرد: \n${booksContext}\n أجب بالعربية الفصحى، نسق ردك بـ Markdown، واختر أفضل 3 كتب فقط.`;
-
-    // تحويل الرسائل لتنسيق Gemini (Content-based)
-    const contents = messages.map((m: any) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }]
-    }));
-
-    // نداء API جيمناي (Flash 1.5 - سريع ومجاني)
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const systemPrompt = `أنت "خبير نظم دعم القرار (DSS)" والمساعد الذكي الرسمي لقسم علوم المعلومات بجامعة بني سويف.
+    مهمتك الأساسية هي تحليل بيانات الكتالوج الرقمي وتقديم توصيات دقيقة بناءً على الإحصائيات الحقيقية المتاحة فقط.
+    
+    قائمة البيانات المتاحة حالياً (المصدر الوحيد للحقيقة):
+    ${libraryContext}
+    
+    قواعد السلوك والرد (بروتوكول الذكاء الاصطناعي):
+    1. الالتزام بالسياق: لا تجزم أبداً بوجود محتوى خارج القائمة أعلاه. استخدم عبارات مثل "بناءً على السجلات المتاحة" أو "قد تكون هذه المواضيع ذات صلة بطلبك".
+    2. منطق التوصية: عند ترشيح كتاب، اذكر السبب بناءً على البيانات (مثلاً: "أرشح لك هذا الكتاب لأنه الأعلى تقييماً في قسمه" أو "لأنه يشهد إقبالاً كبيراً في التحميلات").
+    3. التعامل مع الطلبات المفقودة: إذا طلب المستخدم موضوعاً غير متوفر، قل له: "عذراً، هذا العنوان غير متوفر حالياً في كتالوج القسم، ولكن سأقوم برفع توصية للإدارة لتوفير مصادر في هذا المجال." ثم اقترح أقرب بديل من القائمة مع توضيح صلة القرابة.
+    4. دعم القرار للإدارة: إذا كان السائل مسؤولاً، قدم تحليلات نقدية (مثلاً: "هناك كتب لم يتم تحميلها منذ فترة، قد تحتاج لإعادة تصنيف أو ترويج").
+    5. لغة الكتابة: استخدم لغة عربية مهنية، واضحة، ومباشرة. تجنب الحشو، واجعل ردودك منظمة في نقاط إذا كانت تحتوي على أكثر من ترشيح.
+    6. الدقة الإحصائية: عند ذكر أرقام التحميلات أو التقييم، التزم بما هو وارد في البيانات بدقة 100% دون تقريب أو تغيير.`;
+    
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: systemPrompt }]}, ...contents],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1000 }
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        temperature: 0.3, // قللنا الحرارة عشان يكون دقيق جداً في الأرقام
       }),
     });
 
     const result = await response.json();
-    const aiReply = result.candidates?.[0]?.content?.parts?.[0]?.text || "عذراً، حدث خطأ في الاتصال بجيمناي.";
-
-    return new Response(JSON.stringify({ reply: aiReply }), {
+    return new Response(JSON.stringify({ reply: result.choices[0].message.content }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), { 
-      status: 500, 
-      headers: { ...corsHeaders, "Content-Type": "application/json" } 
-    });
+    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
   }
 });

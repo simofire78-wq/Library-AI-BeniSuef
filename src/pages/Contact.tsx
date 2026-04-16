@@ -14,7 +14,7 @@ const CONTACT_INFO = [
   {
     icon: Phone,
     title: 'هاتف القسم',
-    value: '082-2324567',
+    value: '01554178043',
     sub: 'السبت — الخميس، 9 ص — 3 م',
   },
   {
